@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDR Memory Configuration Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        .memory-chip-front {
+            background: linear-gradient(145deg, #1a1a1a, #333333);
+            border-radius: 2px;
+            box-shadow: 
+                inset 1px 1px 2px rgba(255,255,255,0.1),
+                inset -1px -1px 2px rgba(0,0,0,0.3),
+                2px 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .memory-chip-back {
+            background: linear-gradient(135deg, #2a2a2a, #1a1a1a, #333333);
+            border-radius: 2px;
+            box-shadow: 
+                inset -1px -1px 2px rgba(255,255,255,0.05),
+                inset 1px 1px 2px rgba(0,0,0,0.4),
+                -1px -1px 3px rgba(0,0,0,0.2),
+                1px 1px 2px rgba(0,0,0,0.1);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.85;
+            transform: scale(0.95) rotateY(5deg);
+        }
+        
+        .memory-chip-front::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            background: linear-gradient(45deg, #2a2a2a, #1a1a1a);
+            border-radius: 1px;
+        }
+        
+        .memory-chip-back::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+            border-radius: 1px;
+        }
+        
+        .memory-chip-text {
+            position: relative;
+            z-index: 2;
+            color: #ffffff;
+            font-size: 8px;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+        
+        .memory-chip-text-back {
+            position: relative;
+            z-index: 2;
+            color: #cccccc;
+            font-size: 7px;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.9);
+            opacity: 0.8;
+        }
+        
+        .pcb-board {
+            background: linear-gradient(145deg, #2d5a2d, #1a4d1a);
+            position: relative;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        .pcb-traces {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(90deg, transparent 45%, rgba(255,215,0,0.3) 50%, transparent 55%),
+                linear-gradient(0deg, transparent 45%, rgba(255,215,0,0.3) 50%, transparent 55%);
+            background-size: 20px 20px;
+            border-radius: 4px;
+            opacity: 0.6;
+        }
+        
+        .gold-fingers {
+            background: linear-gradient(180deg, #FFD700, #FFA500, #FF8C00);
+            box-shadow: 
+                inset 0 1px 2px rgba(255,255,255,0.3),
+                0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .memory-label {
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(4px);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-weight: bold;
+            color: #333;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .rank-label-front {
+            background: rgba(255,255,255,0.9);
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-size: 9px;
+            font-weight: bold;
+            color: #2d5a2d;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.2);
+        }
+        
+        .rank-label-back {
+            background: rgba(200,200,200,0.8);
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-size: 8px;
+            font-weight: bold;
+            color: #555;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            opacity: 0.9;
+        }
+        
+        .ddr-generation-color {
+            border: 2px solid;
+        }
+        
+        .ddr-color { border-color: #8B4513; }
+        .ddr2-color { border-color: #4169E1; }
+        .ddr3-color { border-color: #32CD32; }
+        .ddr4-color { border-color: #FF1493; }
+        .ddr5-color { border-color: #9400D3; }
+        
+        .notch {
+            position: absolute;
+            bottom: 16px;
+            width: 8px;
+            height: 4px;
+            background: #1a4d1a;
+            border-radius: 2px 2px 0 0;
+        }
+        
+        .ddr-notch { left: 50px; }
+        .ddr2-notch { left: 60px; }
+        .ddr3-notch { left: 70px; }
+        .ddr4-notch { left: 72px; }
+        .ddr5-notch { left: 74px; }
+        
+        .component-small {
+            position: absolute;
+            width: 4px;
+            height: 2px;
+            background: #444;
+            border-radius: 1px;
+        }
+        
+        .dual-rank-container {
+            position: relative;
+            min-height: 120px;
+        }
+        
+        .rank-section {
+            position: relative;
+            margin-bottom: 8px;
+        }
+        
+        .chips-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .chip-overlap-container {
+            position: relative;
+            display: grid;
+            gap: 3px;
+            justify-content: center;
+        }
+        
+        .addressing-visual {
+            font-family: monospace;
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            border: 2px solid #0369a1;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        
+        .address-bit {
+            display: inline-block;
+            padding: 2px 4px;
+            margin: 1px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+            min-width: 20px;
+        }
+        
+        .bank-bits { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
+        .row-bits { background: #dcfce7; color: #166534; border: 1px solid #22c55e; }
+        .col-bits { background: #e0e7ff; color: #3730a3; border: 1px solid #6366f1; }
+        .group-bits { background: #fce7f3; color: #be185d; border: 1px solid #ec4899; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState } = React;
+        
+        const DDRConfigTool = () => {
+          const [config, setConfig] = useState({
+            generation: 'DDR3',
+            deviceWidth: 'x4',
+            capacity: '1Gb',
+            speed: 'DDR3-1333',
+            voltage: '1.5V',
+            package: 'FBGA-78',
+            ranks: '1',
+            channels: '1',
+            dimmsPerChannel: '1',
+            memoryType: 'UDIMM'
+          });
+
+          // Comprehensive DDR specifications
+          const ddrSpecs = {
+            'DDR': {
+              deviceWidths: ['x4', 'x8', 'x16'],
+              capacities: ['128Mb', '256Mb', '512Mb', '1Gb'],
+              speeds: ['DDR-266', 'DDR-333', 'DDR-400'],
+              voltages: ['2.5V'],
+              memoryTypes: ['UDIMM', 'RDIMM', 'SODIMM'],
+              packages: {
+                'x4': ['TSOP-86', 'BGA-60'],
+                'x8': ['TSOP-54', 'BGA-60'],
+                'x16': ['TSOP-54', 'BGA-84']
+              },
+              pins: 184,
+              prefetch: 2,
+              banks: 4,
+              addressingBits: { bank: 2, row: 13, col: 9, bankGroup: 0 }
+            },
+            'DDR2': {
+              deviceWidths: ['x4', 'x8', 'x16'],
+              capacities: ['256Mb', '512Mb', '1Gb', '2Gb', '4Gb'],
+              speeds: ['DDR2-533', 'DDR2-667', 'DDR2-800', 'DDR2-1066'],
+              voltages: ['1.8V'],
+              memoryTypes: ['UDIMM', 'RDIMM', 'SODIMM', 'FB-DIMM'],
+              packages: {
+                'x4': ['FBGA-78', 'FBGA-84'],
+                'x8': ['FBGA-78', 'TSOP-54'],
+                'x16': ['FBGA-84', 'TSOP-54']
+              },
+              pins: 240,
+              prefetch: 4,
+              banks: 4,
+              addressingBits: { bank: 2, row: 14, col: 10, bankGroup: 0 }
+            },
+            'DDR3': {
+              deviceWidths: ['x4', 'x8', 'x16'],
+              capacities: ['512Mb', '1Gb', '2Gb', '4Gb', '8Gb'],
+              speeds: ['DDR3-800', 'DDR3-1066', 'DDR3-1333', 'DDR3-1600', 'DDR3-1866', 'DDR3-2133'],
+              voltages: ['1.5V', '1.35V (DDR3L)', '1.25V (DDR3U)'],
+              memoryTypes: ['UDIMM', 'RDIMM', 'LRDIMM', 'SODIMM'],
+              packages: {
+                'x4': ['FBGA-78', 'FBGA-96'],
+                'x8': ['FBGA-78', 'FBGA-96', 'TSOP-54'],
+                'x16': ['FBGA-96', 'TSOP-54']
+              },
+              pins: 240,
+              prefetch: 8,
+              banks: 8,
+              addressingBits: { bank: 3, row: 14, col: 10, bankGroup: 0 }
+            },
+            'DDR4': {
+              deviceWidths: ['x4', 'x8', 'x16'],
+              capacities: ['2Gb', '4Gb', '8Gb', '16Gb', '32Gb'],
+              speeds: ['DDR4-1600', 'DDR4-1866', 'DDR4-2133', 'DDR4-2400', 'DDR4-2666', 'DDR4-2933', 'DDR4-3200', 'DDR4-3600', 'DDR4-4000'],
+              voltages: ['1.2V', '1.05V (DDR4L)'],
+              memoryTypes: ['UDIMM', 'RDIMM', 'LRDIMM', 'SODIMM', 'NVDIMM'],
+              packages: {
+                'x4': ['FBGA-78', 'FBGA-96'],
+                'x8': ['FBGA-78', 'FBGA-96'],
+                'x16': ['FBGA-96', 'FBGA-190']
+              },
+              pins: 288,
+              prefetch: 8,
+              banks: 16,
+              addressingBits: { bank: 2, row: 15, col: 10, bankGroup: 2 }
+            },
+            'DDR5': {
+              deviceWidths: ['x4', 'x8', 'x16'],
+              capacities: ['8Gb', '16Gb', '24Gb', '32Gb', '48Gb', '64Gb'],
+              speeds: ['DDR5-3200', 'DDR5-3600', 'DDR5-4000', 'DDR5-4400', 'DDR5-4800', 'DDR5-5200', 'DDR5-5600', 'DDR5-6000', 'DDR5-6400'],
+              voltages: ['1.1V'],
+              memoryTypes: ['UDIMM', 'RDIMM', 'LRDIMM', 'SODIMM', 'MRDIMM'],
+              packages: {
+                'x4': ['FBGA-78', 'FBGA-96'],
+                'x8': ['FBGA-78', 'FBGA-96'],
+                'x16': ['FBGA-96', 'FBGA-190']
+              },
+              pins: 288,
+              prefetch: 16,
+              banks: 16,
+              addressingBits: { bank: 2, row: 16, col: 10, bankGroup: 2 }
+            }
+          };
+
+          // Timing specifications for each generation
+          const getTimings = (generation, speed) => {
+            const timingSpecs = {
+              'DDR': {
+                'DDR-266': { cl: 2.5, trcd: 3, trp: 3, tras: 7, trc: 10 },
+                'DDR-333': { cl: 2.5, trcd: 3, trp: 3, tras: 8, trc: 11 },
+                'DDR-400': { cl: 3, trcd: 3, trp: 3, tras: 8, trc: 11 }
+              },
+              'DDR2': {
+                'DDR2-533': { cl: 4, trcd: 4, trp: 4, tras: 12, trc: 16 },
+                'DDR2-667': { cl: 5, trcd: 5, trp: 5, tras: 15, trc: 20 },
+                'DDR2-800': { cl: 5, trcd: 5, trp: 5, tras: 18, trc: 23 },
+                'DDR2-1066': { cl: 7, trcd: 7, trp: 7, tras: 20, trc: 27 }
+              },
+              'DDR3': {
+                'DDR3-800': { cl: 6, trcd: 6, trp: 6, tras: 18, trc: 24 },
+                'DDR3-1066': { cl: 7, trcd: 7, trp: 7, tras: 20, trc: 27 },
+                'DDR3-1333': { cl: 9, trcd: 9, trp: 9, tras: 24, trc: 33 },
+                'DDR3-1600': { cl: 11, trcd: 11, trp: 11, tras: 28, trc: 39 },
+                'DDR3-1866': { cl: 13, trcd: 13, trp: 13, tras: 32, trc: 45 },
+                'DDR3-2133': { cl: 15, trcd: 15, trp: 15, tras: 36, trc: 51 }
+              },
+              'DDR4': {
+                'DDR4-1600': { cl: 11, trcd: 11, trp: 11, tras: 28, trc: 39 },
+                'DDR4-1866': { cl: 13, trcd: 13, trp: 13, tras: 32, trc: 45 },
+                'DDR4-2133': { cl: 15, trcd: 15, trp: 15, tras: 36, trc: 51 },
+                'DDR4-2400': { cl: 17, trcd: 17, trp: 17, tras: 39, trc: 56 },
+                'DDR4-2666': { cl: 19, trcd: 19, trp: 19, tras: 43, trc: 62 },
+                'DDR4-2933': { cl: 21, trcd: 21, trp: 21, tras: 47, trc: 68 },
+                'DDR4-3200': { cl: 22, trcd: 22, trp: 22, tras: 52, trc: 74 },
+                'DDR4-3600': { cl: 26, trcd: 26, trp: 26, tras: 58, trc: 84 },
+                'DDR4-4000': { cl: 29, trcd: 29, trp: 29, tras: 65, trc: 94 }
+              },
+              'DDR5': {
+                'DDR5-3200': { cl: 22, trcd: 22, trp: 22, tras: 52, trc: 74 },
+                'DDR5-3600': { cl: 26, trcd: 26, trp: 26, tras: 58, trc: 84 },
+                'DDR5-4000': { cl: 30, trcd: 30, trp: 30, tras: 68, trc: 98 },
+                'DDR5-4400': { cl: 32, trcd: 32, trp: 32, tras: 74, trc: 106 },
+                'DDR5-4800': { cl: 34, trcd: 34, trp: 34, tras: 78, trc: 112 },
+                'DDR5-5200': { cl: 38, trcd: 38, trp: 38, tras: 86, trc: 124 },
+                'DDR5-5600': { cl: 40, trcd: 40, trp: 40, tras: 92, trc: 132 },
+                'DDR5-6000': { cl: 42, trcd: 42, trp: 42, tras: 98, trc: 140 },
+                'DDR5-6400': { cl: 46, trcd: 46, trp: 46, tras: 108, trc: 154 }
+              }
+            };
+            
+            return timingSpecs[generation]?.[speed] || { cl: 0, trcd: 0, trp: 0, tras: 0, trc: 0 };
+          };
+
+          // Get current generation specs
+          const currentSpecs = ddrSpecs[config.generation];
+
+          // Calculate addressing parameters
+          const getAddressingInfo = () => {
+            const addressBits = currentSpecs.addressingBits;
+            const deviceWidthNum = parseInt(config.deviceWidth.replace('x', ''));
+            const capacityNum = parseInt(config.capacity.replace(/[^\d]/g, ''));
+            const isGb = config.capacity.includes('Gb');
+            
+            const adjustedRowBits = addressBits.row + Math.log2(capacityNum / (isGb ? 1 : 0.001)) - Math.log2(deviceWidthNum);
+            const adjustedColBits = addressBits.col + Math.log2(deviceWidthNum / 4);
+            
+            const bankCount = Math.pow(2, addressBits.bank);
+            const bankGroupCount = Math.pow(2, addressBits.bankGroup);
+            const rowCount = Math.pow(2, Math.max(adjustedRowBits, 10));
+            const colCount = Math.pow(2, Math.max(adjustedColBits, 8));
+            
+            const burstLength = config.generation === 'DDR5' ? 16 : 8;
+            const pageSize = colCount * burstLength;
+            const deviceSize = bankCount * bankGroupCount * rowCount * colCount * burstLength;
+            
+            return {
+              bankAddressBits: addressBits.bank,
+              bankGroupBits: addressBits.bankGroup,
+              rowAddressBits: Math.max(adjustedRowBits, 10),
+              colAddressBits: Math.max(adjustedColBits, 8),
+              bankCount,
+              bankGroupCount,
+              rowCount,
+              colCount,
+              pageSize,
+              deviceSize,
+              burstLength
+            };
+          };
+
+          // Update dependent fields when generation changes
+          const handleGenerationChange = (newGeneration) => {
+            const newSpecs = ddrSpecs[newGeneration];
+            setConfig({
+              ...config,
+              generation: newGeneration,
+              deviceWidth: newSpecs.deviceWidths[0],
+              capacity: newSpecs.capacities[0],
+              speed: newSpecs.speeds[0],
+              voltage: newSpecs.voltages[0],
+              package: newSpecs.packages[newSpecs.deviceWidths[0]][0],
+              memoryType: newSpecs.memoryTypes[0]
+            });
+          };
+
+          // Calculate performance metrics
+          const getTotalCapacity = () => {
+            const capValue = parseInt(config.capacity.replace(/[^\d]/g, ''));
+            const unit = config.capacity.includes('Gb') ? 'Gb' : 'Mb';
+            const multiplier = config.capacity.includes('Gb') ? 1 : 0.001;
+            const ranks = parseInt(config.ranks);
+            const channels = parseInt(config.channels);
+            const dimms = parseInt(config.dimmsPerChannel);
+            
+            const totalGb = capValue * multiplier * ranks * channels * dimms;
+            return totalGb >= 1 ? `${totalGb}GB` : `${totalGb * 1024}MB`;
+          };
+
+          const getBandwidth = () => {
+            const speedNum = parseInt(config.speed.replace(/[^\d]/g, ''));
+            const channels = parseInt(config.channels);
+            const busWidth = config.generation === 'DDR5' ? 32 : 64;
+            const actualChannels = config.generation === 'DDR5' ? channels * 2 : channels;
+            return `${(speedNum * busWidth * actualChannels / 8 / 1000).toFixed(1)} GB/s`;
+          };
+
+          const getChipCount = () => {
+            const widthNum = parseInt(config.deviceWidth.replace('x', ''));
+            const busWidth = 64;
+            return busWidth / widthNum;
+          };
+
+          // Format large numbers
+          const formatNumber = (num) => {
+            if (num >= 1024 * 1024) return `${(num / (1024 * 1024)).toFixed(1)}M`;
+            if (num >= 1024) return `${(num / 1024).toFixed(1)}K`;
+            return num.toString();
+          };
+
+          // Format bytes
+          const formatBytes = (bytes) => {
+            if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+            if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+            if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+            return `${bytes} Bytes`;
+          };
+
+          // Realistic Memory Card Component
+          const RealisticMemoryCard = () => {
+            const chipsPerRank = getChipCount();
+            const ranks = parseInt(config.ranks);
+            const generation = config.generation.toLowerCase();
+            
+            const getMemoryCardSize = () => {
+              if (config.memoryType === 'SODIMM') return { width: 280, height: ranks > 1 ? 140 : 120 };
+              return { width: 380, height: ranks > 1 ? 170 : 140 };
+            };
+            
+            const { width, height } = getMemoryCardSize();
+            
+            return (
+              <div className="flex justify-center mb-6">
+                <div className={`pcb-board ddr-generation-color ${generation}-color`} 
+                     style={{ width: `${width}px`, height: `${height}px` }}>
+                  
+                  <div className="pcb-traces"></div>
+                  
+                  <div className="relative p-4 dual-rank-container">
+                    {ranks === 1 ? (
+                      <div className="rank-section">
+                        <div className="flex justify-center mb-2">
+                          <div className="rank-label-front">Rank 0 (Single)</div>
+                        </div>
+                        <div className="chips-container">
+                          <div className={`chip-overlap-container grid-cols-${Math.min(chipsPerRank, 8)} grid gap-3`}>
+                            {Array.from({length: chipsPerRank}, (_, i) => (
+                              <div key={`r0-${i}`} 
+                                   className="memory-chip-front" 
+                                   style={{ width: '28px', height: '36px' }}>
+                                <div className="memory-chip-text">{config.capacity}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="rank-section">
+                          <div className="flex justify-center mb-2">
+                            <div className="rank-label-front">Rank 0 (Front Side)</div>
+                          </div>
+                          <div className="chips-container">
+                            <div className={`chip-overlap-container grid-cols-${Math.min(chipsPerRank, 8)} grid gap-3`}>
+                              {Array.from({length: chipsPerRank}, (_, i) => (
+                                <div key={`r0-${i}`} 
+                                     className="memory-chip-front" 
+                                     style={{ width: '28px', height: '36px' }}>
+                                  <div className="memory-chip-text">{config.capacity}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="rank-section">
+                          <div className="flex justify-center mb-2">
+                            <div className="rank-label-back">Rank 1 (Back Side)</div>
+                          </div>
+                          <div className="chips-container">
+                            <div className={`chip-overlap-container grid-cols-${Math.min(chipsPerRank, 8)} grid gap-3`}
+                                 style={{ transform: 'translateX(16px)' }}>
+                              {Array.from({length: chipsPerRank}, (_, i) => (
+                                <div key={`r1-${i}`} 
+                                     className="memory-chip-back" 
+                                     style={{ width: '26px', height: '32px' }}>
+                                  <div className="memory-chip-text-back">{config.capacity}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="absolute top-2 left-4">
+                      <div className="memory-label">{config.generation} {config.memoryType}</div>
+                    </div>
+                    <div className="absolute top-2 right-4">
+                      <div className="memory-label">{config.capacity} {config.deviceWidth}</div>
+                    </div>
+                    <div className="absolute bottom-6 left-4">
+                      <div className="memory-label">{config.speed}</div>
+                    </div>
+                    <div className="absolute bottom-6 right-4">
+                      <div className="memory-label">{config.ranks}R • {config.voltage}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="component-small" style={{ top: '8px', right: '90px' }}></div>
+                  <div className="component-small" style={{ top: '8px', right: '75px' }}></div>
+                  <div className="component-small" style={{ bottom: '30px', left: '20px' }}></div>
+                  <div className="component-small" style={{ bottom: '30px', left: '35px' }}></div>
+                  
+                  <div className={`notch ${generation}-notch`}></div>
+                  
+                  <div className="gold-fingers absolute bottom-0 left-2 right-2 h-4 rounded-b-lg">
+                    <div className="flex justify-between items-center h-full px-3">
+                      <div className="text-xs font-bold text-yellow-800 opacity-70">
+                        {currentSpecs.pins} pins
+                      </div>
+                      <div className="text-xs font-bold text-yellow-800 opacity-70">
+                        {chipsPerRank}×{ranks} chips
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          };
+
+          const timings = getTimings(config.generation, config.speed);
+          const addressingInfo = getAddressingInfo();
+
+          return (
+            <div className="max-w-7xl mx-auto p-6 bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+              <h1 className="text-4xl font-bold text-center mb-8 text-gray-800">
+                Universal DDR Memory Configuration Tool
+              </h1>
+              
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                {/* Configuration Panel */}
+                <div className="bg-white rounded-xl shadow-xl p-6">
+                  <h2 className="text-2xl font-semibold mb-6 text-gray-700 flex items-center">
+                    <span className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">1</span>
+                    Configuration Settings
+                  </h2>
+                  
+                  <div className="space-y-5">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">DDR Generation</label>
+                      <select 
+                        value={config.generation}
+                        onChange={(e) => handleGenerationChange(e.target.value)}
+                        className="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                      >
+                        {Object.keys(ddrSpecs).map(gen => (
+                          <option key={gen} value={gen}>{gen}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Device Width</label>
+                      <select 
+                        value={config.deviceWidth}
+                        onChange={(e) => setConfig({...config, deviceWidth: e.target.value, package: currentSpecs.packages[e.target.value][0]})}
+                        className="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        {currentSpecs.deviceWidths.map(width => (
+                          <option key={width} value={width}>{width}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Device Capacity</label>
+                      <select 
+                        value={config.capacity}
+                        onChange={(e) => setConfig({...config, capacity: e.target.value})}
+                        className="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        {currentSpecs.capacities.map(cap => (
+                          <option key={cap} value={cap}>{cap}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Speed Grade</label>
+                      <select 
+                        value={config.speed}
+                        onChange={(e) => setConfig({...config, speed: e.target.value})}
+                        className="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        {currentSpecs.speeds.map(speed => (
+                          <option key={speed} value={speed}>{speed}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Memory Type</label>
+                      <select 
+                        value={config.memoryType}
+                        onChange={(e) => setConfig({...config, memoryType: e.target.value})}
+                        className="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        {currentSpecs.memoryTypes.map(type => (
+                          <option key={type} value={type}>{type}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Operating Voltage</label>
+                      <select 
+                        value={config.voltage}
+                        onChange={(e) => setConfig({...config, voltage: e.target.value})}
+                        className="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        {currentSpecs.voltages.map(voltage => (
+                          <option key={voltage} value={voltage}>{voltage}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Package Type</label>
+                      <select 
+                        value={config.package}
+                        onChange={(e) => setConfig({...config, package: e.target.value})}
+                        className="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        {currentSpecs.packages[config.deviceWidth].map(pkg => (
+                          <option key={pkg} value={pkg}>{pkg}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="border-t-2 pt-5 mt-6">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-4">System Configuration</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">Ranks per DIMM</label>
+                          <select 
+                            value={config.ranks}
+                            onChange={(e) => setConfig({...config, ranks: e.target.value})}
+                            className="w-full p-2 border-2 border-gray-300 rounded-lg"
+                          >
+                            <option value="1">Single Rank</option>
+                            <option value="2">Dual Rank</option>
+                            {(config.generation === 'DDR4' || config.generation === 'DDR5') && (
+                              <option value="4">Quad Rank</option>
+                            )}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">Memory Channels</label>
+                          <select 
+                            value={config.channels}
+                            onChange={(e) => setConfig({...config, channels: e.target.value})}
+                            className="w-full p-2 border-2 border-gray-300 rounded-lg"
+                          >
+                            <option value="1">Single Channel</option>
+                            <option value="2">Dual Channel</option>
+                            <option value="4">Quad Channel</option>
+                            {(config.generation === 'DDR4' || config.generation === 'DDR5') && (
+                              <option value="8">Octa Channel</option>
+                            )}
+                          </select>
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">DIMMs per Channel</label>
+                          <select 
+                            value={config.dimmsPerChannel}
+                            onChange={(e) => setConfig({...config, dimmsPerChannel: e.target.value})}
+                            className="w-full p-2 border-2 border-gray-300 rounded-lg"
+                          >
+                            <option value="1">1 DIMM</option>
+                            <option value="2">2 DIMMs</option>
+                            <option value="4">4 DIMMs</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Visualization Panel */}
+                <div className="bg-white rounded-xl shadow-xl p-6">
+                  <h2 className="text-2xl font-semibold mb-6 text-gray-700 flex items-center">
+                    <span className="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">2</span>
+                    Memory Visualization
+                  </h2>
+                  
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold mb-3">Realistic Memory Module</h3>
+                    <div className="bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-gray-300 rounded-xl p-6 relative overflow-x-auto">
+                      <RealisticMemoryCard />
+                      <div className="text-center text-sm font-medium text-gray-600">
+                        {config.generation} {config.memoryType} - {getChipCount()} chips per rank × {config.ranks} rank{parseInt(config.ranks) > 1 ? 's' : ''}
+                        {parseInt(config.ranks) > 1 && <span className="block text-xs text-gray-500 mt-1">Back chips are offset to show realistic dual-sided layout</span>}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold mb-3">System Memory Layout</h3>
+                    <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-300 rounded-xl p-4">
+                      {Array.from({length: parseInt(config.channels)}, (_, channelIdx) => (
+                        <div key={channelIdx} className="mb-4 last:mb-0">
+                          <div className="text-sm font-semibold text-blue-700 mb-2 flex items-center">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                            Channel {channelIdx + 1} {config.generation === 'DDR5' && '(Dual 32-bit Sub-channels)'}
+                          </div>
+                          <div className="flex gap-2">
+                            {Array.from({length: parseInt(config.dimmsPerChannel)}, (_, dimmIdx) => (
+                              <div key={dimmIdx} className="bg-gradient-to-b from-green-200 to-green-300 border-2 border-green-400 rounded-lg p-3 text-xs text-center min-w-20 shadow-md">
+                                <div className="font-bold">DIMM {dimmIdx + 1}</div>
+                                <div className="text-gray-600">{config.ranks}R</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-r from-purple-100 to-pink-100 border-2 border-purple-300 rounded-xl p-4">
+                    <h3 className="text-lg font-semibold mb-3 text-purple-800">Performance Summary</h3>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="bg-white rounded-lg p-3 shadow">
+                        <div className="text-gray-600">Total Capacity</div>
+                        <div className="font-bold text-lg text-purple-700">{getTotalCapacity()}</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-3 shadow">
+                        <div className="text-gray-600">Peak Bandwidth</div>
+                        <div className="font-bold text-lg text-purple-700">{getBandwidth()}</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-3 shadow">
+                        <div className="text-gray-600">Bus Width</div>
+                        <div className="font-bold text-lg text-purple-700">{64 * parseInt(config.channels)} bits</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-3 shadow">
+                        <div className="text-gray-600">Data Rate</div>
+                        <div className="font-bold text-lg text-purple-700">{config.speed.split('-')[1]} MT/s</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Technical Specifications */}
+                <div className="xl:col-span-1 space-y-6">
+                  <div className="bg-white rounded-xl shadow-xl p-6">
+                    <h2 className="text-2xl font-semibold mb-6 text-gray-700 flex items-center">
+                      <span className="bg-orange-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">3</span>
+                      Timing Parameters
+                    </h2>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
+                        <div className="text-sm font-medium text-blue-700">CAS Latency</div>
+                        <div className="text-2xl font-bold text-blue-800 font-mono">{timings.cl}</div>
+                        <div className="text-xs text-blue-600">CL</div>
+                      </div>
+                      <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl border border-green-200">
+                        <div className="text-sm font-medium text-green-700">RAS to CAS</div>
+                        <div className="text-2xl font-bold text-green-800 font-mono">{timings.trcd}</div>
+                        <div className="text-xs text-green-600">tRCD</div>
+                      </div>
+                      <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200">
+                        <div className="text-sm font-medium text-purple-700">Row Precharge</div>
+                        <div className="text-2xl font-bold text-purple-800 font-mono">{timings.trp}</div>
+                        <div className="text-xs text-purple-600">tRP</div>
+                      </div>
+                      <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200">
+                        <div className="text-sm font-medium text-orange-700">Active Time</div>
+                        <div className="text-2xl font-bold text-orange-800 font-mono">{timings.tras}</div>
+                        <div className="text-xs text-orange-600">tRAS</div>
+                      </div>
+                      <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-xl border border-red-200">
+                        <div className="text-sm font-medium text-red-700">Row Cycle</div>
+                        <div className="text-2xl font-bold text-red-800 font-mono">{timings.trc}</div>
+                        <div className="text-xs text-red-600">tRC</div>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                      <div className="text-sm font-semibold text-blue-800">
+                        Standard Timing: {timings.cl}-{timings.trcd}-{timings.trp}-{timings.tras}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl shadow-xl p-6">
+                    <h2 className="text-2xl font-semibold mb-6 text-gray-700 flex items-center">
+                      <span className="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">4</span>
+                      Technical Specifications
+                    </h2>
+                    
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <div className="text-sm text-gray-600">Architecture</div>
+                          <div className="font-semibold">{config.generation}</div>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <div className="text-sm text-gray-600">Interface</div>
+                          <div className="font-semibold">{config.deviceWidth}</div>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <div className="text-sm text-gray-600">Package</div>
+                          <div className="font-semibold">{config.package}</div>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <div className="text-sm text-gray-600">Voltage</div>
+                          <div className="font-semibold">{config.voltage}</div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4 rounded-lg border border-indigo-200">
+                        <h4 className="font-semibold text-indigo-800 mb-2">Key Features</h4>
+                        <ul className="text-sm text-indigo-700 space-y-1">
+                          <li>• {currentSpecs.prefetch}n Prefetch Architecture</li>
+                          <li>• {currentSpecs.banks} Bank{currentSpecs.banks > 1 ? 's' : ''} per Device</li>
+                          <li>• {currentSpecs.pins}-pin {config.memoryType} Interface</li>
+                          {config.generation === 'DDR5' && <li>• On-die ECC Support</li>}
+                          {config.generation === 'DDR4' && <li>• Bank Group Architecture</li>}
+                          {config.generation === 'DDR3' && <li>• Fly-by Topology</li>}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* NEW ADDRESSING SECTION */}
+              <div className="mt-8 bg-white rounded-xl shadow-xl p-6">
+                <h2 className="text-2xl font-semibold mb-6 text-gray-700 flex items-center">
+                  <span className="bg-indigo-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">5</span>
+                  Memory Addressing & DRAM Size Calculation
+                </h2>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Address Mapping */}
+                  <div className="space-y-6">
+                    <h3 className="text-xl font-semibold text-gray-700">Address Mapping</h3>
+                    
+                    {/* Address Bit Layout Visual */}
+                    <div className="addressing-visual">
+                      <div className="text-sm font-semibold mb-3 text-center">Memory Address Structure ({Math.round(addressingInfo.rowAddressBits + addressingInfo.colAddressBits + addressingInfo.bankAddressBits + addressingInfo.bankGroupBits)} bits total)</div>
+                      
+                      <div className="flex flex-wrap justify-center items-center gap-1 mb-4">
+                        {/* Row Address Bits */}
+                        {Array.from({length: Math.round(addressingInfo.rowAddressBits)}, (_, i) => (
+                          <div key={`row-${i}`} className="address-bit row-bits">
+                            R{Math.round(addressingInfo.rowAddressBits) - 1 - i}
+                          </div>
+                        ))}
+                        
+                        {/* Bank Group Bits (DDR4/DDR5) */}
+                        {addressingInfo.bankGroupBits > 0 && Array.from({length: addressingInfo.bankGroupBits}, (_, i) => (
+                          <div key={`bg-${i}`} className="address-bit group-bits">
+                            BG{addressingInfo.bankGroupBits - 1 - i}
+                          </div>
+                        ))}
+                        
+                        {/* Bank Address Bits */}
+                        {Array.from({length: addressingInfo.bankAddressBits}, (_, i) => (
+                          <div key={`bank-${i}`} className="address-bit bank-bits">
+                            B{addressingInfo.bankAddressBits - 1 - i}
+                          </div>
+                        ))}
+                        
+                        {/* Column Address Bits */}
+                        {Array.from({length: Math.round(addressingInfo.colAddressBits)}, (_, i) => (
+                          <div key={`col-${i}`} className="address-bit col-bits">
+                            C{Math.round(addressingInfo.colAddressBits) - 1 - i}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <div className="text-xs text-center space-x-4">
+                        <span><span className="row-bits address-bit">Row</span> Address</span>
+                        {addressingInfo.bankGroupBits > 0 && <span><span className="group-bits address-bit">BG</span> Bank Group</span>}
+                        <span><span className="bank-bits address-bit">B</span> Bank</span>
+                        <span><span className="col-bits address-bit">Col</span> Column</span>
+                      </div>
+                    </div>
+
+                    {/* Address Details */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <h4 className="font-semibold text-green-800 mb-2">Row Addressing</h4>
+                        <div className="text-sm space-y-1">
+                          <div>Address Bits: <span className="font-mono font-semibold">{Math.round(addressingInfo.rowAddressBits)}</span></div>
+                          <div>Total Rows: <span className="font-mono font-semibold">{formatNumber(addressingInfo.rowCount)}</span></div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h4 className="font-semibold text-blue-800 mb-2">Column Addressing</h4>
+                        <div className="text-sm space-y-1">
+                          <div>Address Bits: <span className="font-mono font-semibold">{Math.round(addressingInfo.colAddressBits)}</span></div>
+                          <div>Total Columns: <span className="font-mono font-semibold">{formatNumber(addressingInfo.colCount)}</span></div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <h4 className="font-semibold text-yellow-800 mb-2">Bank Addressing</h4>
+                        <div className="text-sm space-y-1">
+                          <div>Address Bits: <span className="font-mono font-semibold">{addressingInfo.bankAddressBits}</span></div>
+                          <div>Total Banks: <span className="font-mono font-semibold">{addressingInfo.bankCount}</span></div>
+                        </div>
+                      </div>
+                      
+                      {addressingInfo.bankGroupBits > 0 && (
+                        <div className="bg-pink-50 border border-pink-200 rounded-lg p-4">
+                          <h4 className="font-semibold text-pink-800 mb-2">Bank Group</h4>
+                          <div className="text-sm space-y-1">
+                            <div>Address Bits: <span className="font-mono font-semibold">{addressingInfo.bankGroupBits}</span></div>
+                            <div>Total Groups: <span className="font-mono font-semibold">{addressingInfo.bankGroupCount}</span></div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* DRAM Size Calculations */}
+                  <div className="space-y-6">
+                    <h3 className="text-xl font-semibold text-gray-700">DRAM Size Calculations</h3>
+                    
+                    <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-indigo-800 mb-3">Memory Organization</h4>
+                      <div className="text-sm space-y-2">
+                        <div className="flex justify-between">
+                          <span>Device Width:</span>
+                          <span className="font-mono font-semibold">{config.deviceWidth} ({parseInt(config.deviceWidth.replace('x', ''))} bits)</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Burst Length:</span>
+                          <span className="font-mono font-semibold">BL{addressingInfo.burstLength}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Page Size:</span>
+                          <span className="font-mono font-semibold">{formatBytes(addressingInfo.pageSize)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Banks per Device:</span>
+                          <span className="font-mono font-semibold">{addressingInfo.bankCount}</span>
+                        </div>
+                        {addressingInfo.bankGroupBits > 0 && (
+                          <div className="flex justify-between">
+                            <span>Bank Groups:</span>
+                            <span className="font-mono font-semibold">{addressingInfo.bankGroupCount}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-green-800 mb-3">Size Calculation Formula</h4>
+                      <div className="text-sm font-mono bg-white p-3 rounded border space-y-1">
+                        <div>Device Size = Banks × Rows × Columns × Burst × Width</div>
+                        <div className="text-xs text-gray-600">= {addressingInfo.bankCount} × {formatNumber(addressingInfo.rowCount)} × {formatNumber(addressingInfo.colCount)} × {addressingInfo.burstLength} × {parseInt(config.deviceWidth.replace('x', ''))/8} bytes</div>
+                        <div className="font-bold text-green-700">= {formatBytes(addressingInfo.deviceSize)}</div>
+                      </div>
+                    </div>
+
+                    <div className="bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-purple-800 mb-3">Device Specifications</h4>
+                      <div className="text-sm space-y-2">
+                        <div className="flex justify-between">
+                          <span>Calculated Device Size:</span>
+                          <span className="font-mono font-semibold">{formatBytes(addressingInfo.deviceSize)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Configured Capacity:</span>
+                          <span className="font-mono font-semibold">{config.capacity}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Page Size (Row Buffer):</span>
+                          <span className="font-mono font-semibold">{formatBytes(addressingInfo.pageSize)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Total Addressable Space:</span>
+                          <span className="font-mono font-semibold">{formatBytes(addressingInfo.deviceSize * addressingInfo.bankCount)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* System-level calculations */}
+                    <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-orange-800 mb-3">System-Level Calculations</h4>
+                      <div className="text-sm space-y-2">
+                        <div className="flex justify-between">
+                          <span>Chips per Rank:</span>
+                          <span className="font-mono font-semibold">{getChipCount()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Ranks per DIMM:</span>
+                          <span className="font-mono font-semibold">{config.ranks}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Capacity per Rank:</span>
+                          <span className="font-mono font-semibold">{formatBytes(addressingInfo.deviceSize * getChipCount())}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Total DIMM Capacity:</span>
+                          <span className="font-mono font-semibold">{formatBytes(addressingInfo.deviceSize * getChipCount() * parseInt(config.ranks))}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>System Total:</span>
+                          <span className="font-mono font-semibold text-lg text-orange-800">{getTotalCapacity()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Memory Type Definitions */}
+              <div className="mt-8 bg-white rounded-xl shadow-xl p-6">
+                <h2 className="text-2xl font-semibold mb-6 text-gray-700 flex items-center">
+                  <span className="bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">6</span>
+                  Memory Type Definitions
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <h4 className="font-semibold text-gray-700 mb-2">UDIMM</h4>
+                    <p className="text-gray-600">Unbuffered DIMM - Direct connection to memory controller, lowest latency, common in desktops</p>
+                  </div>
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <h4 className="font-semibold text-gray-700 mb-2">RDIMM</h4>
+                    <p className="text-gray-600">Registered DIMM - Buffered command/address signals, higher capacity, used in servers</p>
+                  </div>
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <h4 className="font-semibold text-gray-700 mb-2">LRDIMM</h4>
+                    <p className="text-gray-600">Load Reduced DIMM - Buffered data signals, highest capacity, enterprise applications</p>
+                  </div>
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <h4 className="font-semibold text-gray-700 mb-2">SODIMM</h4>
+                    <p className="text-gray-600">Small Outline DIMM - Compact form factor for laptops and mini systems</p>
+                  </div>
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <h4 className="font-semibold text-gray-700 mb-2">FB-DIMM</h4>
+                    <p className="text-gray-600">Fully Buffered DIMM - Serial interface, DDR2 era server memory</p>
+                  </div>
+                  {(config.generation === 'DDR4' || config.generation === 'DDR5') && (
+                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <h4 className="font-semibold text-gray-700 mb-2">NVDIMM</h4>
+                      <p className="text-gray-600">Non-Volatile DIMM - Persistent memory with backup power</p>
+                    </div>
+                  )}
+                  {config.generation === 'DDR5' && (
+                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <h4 className="font-semibold text-gray-700 mb-2">MRDIMM</h4>
+                      <p className="text-gray-600">Multi-Ranked Buffered DIMM - High capacity with improved signal integrity</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Generation Comparison Table */}
+              <div className="mt-8 bg-white rounded-xl shadow-xl p-6">
+                <h2 className="text-2xl font-semibold mb-6 text-gray-700 flex items-center">
+                  <span className="bg-teal-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">7</span>
+                  DDR Generation Comparison
+                </h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="p-3 text-left font-semibold">Generation</th>
+                        <th className="p-3 text-left font-semibold">Voltage</th>
+                        <th className="p-3 text-left font-semibold">Pin Count</th>
+                        <th className="p-3 text-left font-semibold">Prefetch</th>
+                        <th className="p-3 text-left font-semibold">Banks</th>
+                        <th className="p-3 text-left font-semibold">Max Speed</th>
+                        <th className="p-3 text-left font-semibold">Key Features</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(ddrSpecs).map(([gen, specs]) => (
+                        <tr key={gen} className={`border-b ${config.generation === gen ? 'bg-blue-50 font-semibold' : ''}`}>
+                          <td className="p-3">{gen}</td>
+                          <td className="p-3 font-mono">{specs.voltages[0]}</td>
+                          <td className="p-3 font-mono">{specs.pins}</td>
+                          <td className="p-3 font-mono">{specs.prefetch}n</td>
+                          <td className="p-3 font-mono">{specs.banks}</td>
+                          <td className="p-3 font-mono">{specs.speeds[specs.speeds.length - 1]}</td>
+                          <td className="p-3 text-xs">
+                            {gen === 'DDR' && 'First DDR, Single-ended'}
+                            {gen === 'DDR2' && 'ODT, Lower voltage'}
+                            {gen === 'DDR3' && 'Fly-by topology, 8n prefetch'}
+                            {gen === 'DDR4' && 'Bank groups, Point-to-point'}
+                            {gen === 'DDR5' && 'Dual channels, On-die ECC, DFE'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Advanced Features */}
+              <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white rounded-xl shadow-xl p-6">
+                  <h3 className="text-xl font-semibold mb-4 text-gray-700">Advanced Features</h3>
+                  <div className="space-y-3 text-sm">
+                    {config.generation === 'DDR5' && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <strong className="text-green-800">DDR5 Exclusive:</strong>
+                        <ul className="mt-2 space-y-1 text-green-700 ml-4">
+                          <li>• On-die ECC for improved reliability</li>
+                          <li>• Decision Feedback Equalization (DFE)</li>
+                          <li>• Dual 32-bit sub-channels per DIMM</li>
+                          <li>• Same bank refresh for power efficiency</li>
+                        </ul>
+                      </div>
+                    )}
+                    {config.generation === 'DDR4' && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <strong className="text-blue-800">DDR4 Features:</strong>
+                        <ul className="mt-2 space-y-1 text-blue-700 ml-4">
+                          <li>• Bank group architecture (4 groups)</li>
+                          <li>• Fine granularity refresh (FGR)</li>
+                          <li>• Command/Address parity</li>
+                          <li>• Write CRC for data integrity</li>
+                        </ul>
+                      </div>
+                    )}
+                    {config.memoryType === 'LRDIMM' && (
+                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                        <strong className="text-purple-800">LRDIMM Benefits:</strong>
+                        <ul className="mt-2 space-y-1 text-purple-700 ml-4">
+                          <li>• Higher capacity per DIMM slot</li>
+                          <li>• Improved signal integrity</li>
+                          <li>• Reduced loading on memory controller</li>
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-xl p-6">
+                  <h3 className="text-xl font-semibold mb-4 text-gray-700">Calculated Metrics</h3>
+                  <div className="space-y-4">
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-green-800 mb-2">Capacity Breakdown</h4>
+                      <div className="text-sm space-y-1">
+                        <div>Per Device: <span className="font-mono font-semibold">{config.capacity}</span></div>
+                        <div>Per Rank: <span className="font-mono font-semibold">{(parseInt(config.capacity.replace(/[^\d]/g, '')) * (config.capacity.includes('Gb') ? 1 : 0.001) * 64 / parseInt(config.deviceWidth.replace('x', ''))).toFixed(1)}GB</span></div>
+                        <div>Per DIMM: <span className="font-mono font-semibold">{(parseInt(config.capacity.replace(/[^\d]/g, '')) * (config.capacity.includes('Gb') ? 1 : 0.001) * 64 / parseInt(config.deviceWidth.replace('x', '')) * parseInt(config.ranks)).toFixed(1)}GB</span></div>
+                        <div>Total System: <span className="font-mono font-semibold">{getTotalCapacity()}</span></div>
+                      </div>
+                    </div>
+
+                    <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-blue-800 mb-2">Performance Metrics</h4>
+                      <div className="text-sm space-y-1">
+                        <div>Clock Speed: <span className="font-mono font-semibold">{parseInt(config.speed.replace(/[^\d]/g, '')) / 2} MHz</span></div>
+                        <div>Data Rate: <span className="font-mono font-semibold">{config.speed.split('-')[1]} MT/s</span></div>
+                        <div>Channel Width: <span className="font-mono font-semibold">64 bits</span></div>
+                        <div>Total Bandwidth: <span className="font-mono font-semibold">{getBandwidth()}</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<DDRConfigTool />);
+    </script>
+</body>
+</html>
